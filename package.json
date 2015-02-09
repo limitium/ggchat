@@ -1,0 +1,23 @@
+{
+  "name": "ggchat",
+  "version": "0.0.1",
+  "description": "ggchat ======",
+  "main": "app.coffee",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/limitium/ggchat.git"
+  },
+  "author": "limitium",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/limitium/ggchat/issues"
+  },
+  "homepage": "https://github.com/limitium/ggchat",
+  "dependencies": {
+    "request": "^2.51.0",
+    "websocket": "^1.0.14"
+  }
+}
