@@ -1,4 +1,7 @@
 WebSocketClient = require("websocket").client
+request = require('request')
+request = request.defaults({jar: true})
+
 
 class GGClient
   client: null
@@ -10,7 +13,7 @@ class GGClient
     @client = new WebSocketClient()
     @init_listeners()
 
-  init_listeners:->
+  init_listeners: ->
     @client.on "connectFailed", (error) ->
       console.log "Connect Error: " + error.toString()
 
@@ -36,13 +39,13 @@ class GGClient
             else
               console.log msg
 
-  send_data:(data)->
+  send_data: (data)->
     if @connection
       @connection.sendUTF JSON.stringify data
     else
       console.log 'not connected'
 
-  connect:->
+  connect: ->
     @client.connect "ws://chat.goodgame.ru:8081/chat/websocket"
 
   auth: =>
@@ -71,29 +74,27 @@ class GGClient
         mobile: 0
 
 
-
-
-
-request = require('request')
-request = request.defaults({jar: true})
-
-channel = 'HawK'
-username = 'limitan'
-password = 'qweqwe123'
-
-request.get(
-  url: "http://goodgame.ru/channel/#{channel}/"
-  followAllRedirects: true
-  , (err,response,body)->
-    m = body.match(/src="http\:\/\/goodgame\.ru\/player\?(\d+)"><\/iframe>/)
-    channel_id = m[1]
-
+class GGConnector
+  channel_name: null
+  channel_id: null
+  uid: null
+  token: null
+  constructor: (@channel_name)->
+  get_channel_id: (cb)=>
+    request.get(
+      url: "http://goodgame.ru/channel/#{@channel_name}/"
+      followAllRedirects: true
+    , (err, response, body)=>
+      m = body.match(/src="http\:\/\/goodgame\.ru\/player\?(\d+)"><\/iframe>/)
+      @channel_id = m[1]
+      cb(@channel_id)
+    )
+  get_token: (username, password, cb)=>
     j = request.jar();
     request.get(
-        url:'http://goodgame.ru'
-        jar: j
-      , (err, response) ->
-
+      url: 'http://goodgame.ru'
+      jar: j
+    , (err, response) =>
       j.setCookie(request.cookie("fixed=1; auto_login_name=#{username}"), 'goodgame.ru');
       request.post(
         url: 'http://goodgame.ru/ajax/login/',
@@ -104,31 +105,36 @@ request.get(
         headers:
           'X-Requested-With': 'XMLHttpRequest'
         jar: j
-      , (err, response)->
-
+      , (err, response)=>
         userData =
-          uid:''
-          token:''
-          channel_id:''
-
-        userData[cookie.key] = cookie.value for cookie in j.getCookies('http://goodgame.ru') when cookie.key in ['uid', 'token']
-        userData.channel_id = channel_id
+          uid: null
+          token: null
+        userData[cookie.key] = cookie.value for cookie in j.getCookies('http://goodgame.ru') when cookie.key in ['uid',
+                                                                                                                 'token']
 
         request.get(
-          url: "http://goodgame.ru/channel/#{channel}"
-          jar:j
-        ,(err,response,body)->
-
+          url: "http://goodgame.ru/channel/#{@channel_name}"
+          jar: j
+        , (err, response, body)=>
           m = body.match(/token: '(.*?)',/)
           unless m
             m = body.match(/Token = '(.*?)';/)
           userData.token = m[1]
-
-          c = new GGClient userData.uid, userData.token, userData.channel_id
-          c.connect()
+          cb(userData)
         )
       )
     )
-)
+  get_client: (username, password, cb)=>
+    @get_token username, password, (userData)=>
+      cb new GGClient(userData.uid, userData.token, @channel_id)
+
+
+
+conn = new GGConnector('HawK')
+conn.get_channel_id ->
+  conn.get_client('limitan', 'qweqwe123', (client)->
+    client.connect()
+  )
+
 
 
