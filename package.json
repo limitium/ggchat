@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/limitium/ggchat",
   "dependencies": {
+    "phantom": "^0.7.2",
     "request": "^2.51.0",
     "websocket": "^1.0.14"
   }
