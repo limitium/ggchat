@@ -34,7 +34,7 @@ class GGClient
           switch msg.type
             when 'welcome' then @auth()
             when 'success_auth' then @enter()
-            when 'success_join' then @send('Hi! (._.)')
+#            when 'success_join' then @send('Hi! (._.)')
             when 'message' then console.log msg.data
             else
               console.log msg
@@ -85,7 +85,8 @@ class GGConnector
       url: "http://goodgame.ru/channel/#{@channel_name}/"
       followAllRedirects: true
     , (err, response, body)=>
-      m = body.match(/src="http\:\/\/goodgame\.ru\/player\?(\d+)"><\/iframe>/)
+#      m = body.match(/src="http\:\/\/goodgame\.ru\/player\?(\d+)"><\/iframe>/)
+      m = body.match(/\$\('#comments'\)\.comments\('\d+','(\d+)',''\);/)
       @channel_id = m[1]
       cb(@channel_id)
     )
@@ -129,12 +130,61 @@ class GGConnector
       cb new GGClient(userData.uid, userData.token, @channel_id)
 
 
+clients = []
+smiles =
+  nice: ['peka', 'grin', 'daun', 'smile', 'cool', 'yazik', 'dog1', 'thup', 'dance', 'love', 'kiss', 'geek', 'pled']
+  bad: ['rage', 'jackie', 'fp', 'verybad', 'slow', 'flame', 'fireext', 'fibo', 'grumpy', 'whaaat', 'peka']
+bots = [
+  ['limitan', 'qweqwe123']
+  ['limitium', 'qweqwe123']
+  ['dwtjpoba', 'abdula228']
+  ['edmevdtb', 'abdula229']
+  ['dwopxseb', 'abdula1488']
+  ['dworball', 'abdulasergey']
+  ['edyzaoet', 'abdulaeblan']
+  ['edyaiiky', 'idinahui']
+  ['edwraahk', 'vaginaparty']
+]
 
-conn = new GGConnector('HawK')
+conn = new GGConnector('edrena_grelka')
 conn.get_channel_id ->
-  conn.get_client('limitan', 'qweqwe123', (client)->
-    client.connect()
-  )
+  for bot in bots
+    do (bot)->
+      conn.get_client(bot[0], bot[1], (client)->
+        clients.push client
+        client.connect()
+      )
 
+get_random_int = (max)->
+  Math.round(Math.random() * max)
 
+get_random_item = (arr)->
+  arr[get_random_int(arr.length - 1)]
 
+select_client = ->
+  get_random_item(clients)
+
+select_smile = (type)->
+  get_random_item(smiles[type])
+
+render_smile_times = (smile, times)->
+  (render_smile(smile) for i in [0..times]).join()
+
+render_smile = (smile)->
+  ':' + smile + ':'
+
+send_smile = (client)->
+  type = if Math.random() > 0.3 then 'bad' else 'nice'
+  smile = select_smile type
+  console.log client, clients
+  client.send render_smile_times(smile, get_random_int(3))
+
+send_random_client_smile = ->
+  try
+    console.log 'sending!'
+    send_smile(select_client())
+  catch err
+    console.error 'errr', err
+  setTimeout(send_random_client_smile, get_random_int(1000 * 60 * 5))
+
+send_random_client_smile()
